@@ -1,0 +1,68 @@
+# ================================================================
+#  الدرس ١ — GitHub Actions من الصفر
+#  اقرأ هذا الملف من أعلى إلى أسفل: كل جزء تحته شرحه.
+#  لتشغيله: تبويب Actions ← Lesson 01 - Basics ← Run workflow
+# ================================================================
+
+# ---------- ١) الاسم ----------
+# مجرد اسم يظهر في تبويب Actions، لا يؤثر على التنفيذ.
+name: Lesson 01 - Basics
+
+# ---------- ٢) متى يعمل؟ (الـ trigger) ----------
+# workflow_dispatch = تشغيل يدوي بزر "Run workflow".
+# اخترنا اليدوي فقط لأنه آمن للتعلّم: أي push كان سيشغّله مع كل تعديل تجربه.
+on:
+  workflow_dispatch:
+
+# ---------- ٣) المهام ----------
+# jobs: كل job يعمل على جهاز (runner) منفصل ونظيف تمامًا.
+# لو أضفت job ثانيًا فإنه يعمل بالتوازي ما لم تكتب needs: hello
+jobs:
+  hello:
+    # الجهاز: أحدث Ubuntu تستضيفه GitHub (مجاني للمستودعات العامة)
+    runs-on: ubuntu-latest
+    # سقف زمني: لو تجاوز الجوب هذا الوقت يُقتل تلقائيًا
+    timeout-minutes: 5
+
+    # ---------- ٤) الخطوات ----------
+    # steps: تنفَّذ بالترتيب من الأعلى للأسفل.
+    # كل خطوة إما uses: (أكشن جاهز) أو run: (أمر شل) — لا الاثنان معًا.
+    steps:
+      # أ) أكشن جاهز من السوق: يجعل كود المستودع موجودًا على الجهاز
+      - name: "١. تنزيل الكود"
+        uses: actions/checkout@v4
+
+      # ب) أمر شل بسيط
+      - name: "٢. مرحبًا"
+        run: echo "مرحبًا! هذا أول workflow لي"
+
+      # ج) متغيرات github.* الجاهزة (context) — GitHub يملؤها تلقائيًا
+      - name: "٣. معلومات التشغيل"
+        run: |
+          echo "المستودع   : ${{ github.repository }}"
+          echo "الفرع      : ${{ github.ref_name }}"
+          echo "الحدث      : ${{ github.event_name }}"
+          echo "المنفّذ    : ${{ github.actor }}"
+          echo "رقم التشغيل: ${{ github.run_number }}"
+
+      # د) متغير بيئة خاص بهذه الخطوة فقط (لا يتسرب لغيرها)
+      - name: "٤. متغيرات البيئة"
+        env:
+          MY_NAME: "متعلم GitHub Actions"
+        run: echo "قيمتي: $MY_NAME"
+
+      # هـ) الجهاز مؤقت: أي ملف لا ترفعه يضيع عند نهاية التشغيل
+      - name: "٥. إنشاء ملف"
+        run: |
+          mkdir -p out
+          echo "تم التنفيذ: $(date -u)" > out/result.txt
+          echo "--- محتوى الملف ---"
+          cat out/result.txt
+
+      # و) رفع الملف كـ Artifact ليبقى بعد انتهاء التشغيل (ينتهي بعد ٩٠ يومًا)
+      - name: "٦. رفع النتيجة كـ Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-result
+          path: out/result.txt
+          if-no-files-found: error
